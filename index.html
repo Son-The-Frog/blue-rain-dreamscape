@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>Blue Rain Dreamscape</title>
+    <style>
+        body, html { 
+            margin: 0; 
+            padding: 0; 
+            overflow-x: hidden; 
+            background: radial-gradient(circle, #ffffff 0%, #d0e0f0 100%);
+            min-height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        canvas { 
+            display: block; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            z-index: 1;
+        }
+        #overlay { 
+            position: absolute; 
+            top: 40%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            color: #5a7a9a; 
+            text-align: center; 
+            pointer-events: none; 
+            opacity: 0.8; 
+            animation: float 6s ease-in-out infinite; 
+            z-index: 10;
+        }
+        @keyframes float { 
+            0% { transform: translate(-50%, -50%) translateY(0px); } 
+            50% { transform: translate(-50%, -50%) translateY(-20px); } 
+            100% { transform: translate(-50%, -50%) translateY(0px); } 
+        }
+        .story-container { 
+            position: relative; 
+            z-index: 10; 
+            max-width: 600px; 
+            margin: 100vh auto 100px auto; 
+            padding: 20px; 
+            text-align: center; 
+            color: #5a7a9a; 
+            line-height: 1.6;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 20px; 
+            backdrop-filter: blur(5px);
+        }
+    </style>
+</head>
+<body>
+    <div id='overlay'>
+        <h1>Blue Rain Dreamscape</h1>
+        <p>Everything feels quiet and sleepy.</p>
+    </div>
+    <div class='story-container'>
+        <h2>A Sleepy Dream</h2>
+        <p>I remember a place where the snow was white and soft, like a giant blanket. Then, the weather changed, and blue raindrops began to fall, splashing gently into a great fountain. I floated through the plaza, feeling light and warm despite the rain. The whole world was just blue and white, and it felt like the most peaceful nap I've ever had.</p>
+    </div>
+    <canvas id='rainCanvas'></canvas>
+    <script>
+        const canvas = document.getElementById('rainCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let raindrops = [];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Raindrop {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * -height;
+                this.length = Math.random() * 20 + 10;
+                this.speed = Math.random() * 5 + 5;
+                this.opacity = Math.random() * 0.5 + 0.2;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.strokeStyle = `rgba(100, 149, 237, ${this.opacity})`;
+                ctx.lineWidth = 1.5;
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x, this.y + this.length);
+                ctx.stroke();
+            }
+            update() {
+                this.y += this.speed;
+                if (this.y > height) {
+                    this.reset();
+                }
+            }
+        }
+
+        for (let i = 0; i < 150; i++) {
+            raindrops.push(new Raindrop());
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            raindrops.forEach(drop => {
+                drop.update();
+                drop.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
