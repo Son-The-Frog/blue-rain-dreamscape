@@ -20,7 +20,8 @@ class Raindrop {
         this.y = Math.random() * -height;
         this.length = Math.random() * 20 + 10;
         this.speed = Math.random() * 5 + 5;
-        this.opacity = Math.random() * 0.5 + 0.2;
+        // Lowered opacity to make them feel more ethereal and soft
+        this.opacity = Math.random() * 0.3 + 0.1;
     }
     draw() {
         ctx.beginPath();
