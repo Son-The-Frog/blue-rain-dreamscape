@@ -87,93 +87,151 @@ class Snowflake {
     update() {
         this.y += this.speed;
         this.x += this.wind;
-        
         if (this.y > height) {
             this.reset();
         }
-        if (this.x > width) this.x = 0;
-        if (this.x < 0) this.x = width;
     }
 }
 
 const raindropsCount = 150;
-const snowflakesCount = 100;
-for (let i = 0; i < raindropsCount; i++) raindrops.push(new Raindrop());
-for (let i = 0; i < snowflakesCount; i++) snowflakes.push(new Snowflake());
+const snowflakesCount = 80;
+const raindropsArray = new Array(raindropsCount).fill(null).map(() => new Raindrop());
+const snowflakesArray = new Array(snowflakesCount).fill(null).map(() => new Snowflake());
 
-function drawFrogAndUmbrella() {
+let audioCtx = null;
+let rainSound = null;
+let volumeControl = document.getElementById('volumeSlider');
+let audioToggle = document.getElementById('audioToggle');
+let toggleText = document.getElementById('toggleText');
+
+function initAudio() {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // Simple rain noise using white noise and filter
+    const bufferSize = 2 * 1024;
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+    }
+    
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = buffer;
+    noise.loop = true;
+    
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1200, audioCtx.currentTime);
+    
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+    
+    noise.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    rainSound = { noise, filter, gainNode };
+    noise.start();
+}
+
+function toggleAudio() {
+    if (!audioCtx) {
+        initAudio();
+    }
+    
+    if (rainSound.gainNode.gain.value === 0) {
+        rainSound.gainNode.gain.setTargetAtTime(0.2, audioCtx.currentTime, 0.1);
+        toggleText.innerText = 'Stop the rain';
+    }
+ else if (rainSound.gainNode.gain.value > 0) {
+        rainSound.gainNode.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+        toggleText.innerText = 'Listen to the rain';
+    }
+}
+
+function updateVolume() {
+    if (rainSound) {
+        rainSound.gainNode.gain.value = volumeControl.value * 0.2;
+    }
+}
+
+audioToggle.addEventListener('click', toggleAudio);
+volumeControl.addEventListener('input', updateVolume);
+
+let isSleepy = false;
+let sleepyToggle = document.getElementById('sleepyToggle');
+let sleepyText = document.getElementById('sleepyText');
+let sleepyOverlay = document.createElement('div');
+
+sleepyOverlay.className = 'sleepy-overlay';
+document.body.appendChild(sleepyOverlay);
+
+sleepyToggle.addEventListener('click', () => {
+    isSleepy = !isSleepy;
+    sleepyText.innerText = isSleepy ? 'Wake up' : 'Sleep';
+    sleepyOverlay.classList.toggle('active');
+});
+
+function drawFrog() {
     const centerX = width / 2;
-    const centerY = height * 0.8;
+    const centerY = height * 0.85;
+    const baseScale = 0.15;
     
-    // Draw Umbrella first (above frog)
-    const umbrellaWidth = 120;
-    const umbrellaHeight = 60;
-    ctx.drawImage(umbrellaImg, centerX - umbrellaWidth / 2, centerY - 80, umbrellaWidth, umbrellaHeight);
+    // Breathing pulse effect
+    const pulse = 1 + Math.sin(Date.now() * 0.0015) * 0.02;
+    const scale = baseScale * pulse;
+
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.scale(scale, scale);
+    ctx.drawImage(frogImg, -frogImg.width / 2, -frogImg.height / 2); 
+    ctx.restore();
+}
+
+function drawUmbrella() {
+    const centerX = width / 2;
+    const centerY = height * 0.85;
+    const baseScale = 0.15;
     
-    // Draw Frog underneath
-    const frogWidth = 50;
-    const frogHeight = 50;
-    ctx.drawImage(frogImg, centerX - frogWidth / 2, centerY - 40, frogWidth, frogHeight);
+    // Umbrella follows the breathing pulse of the frog
+    const pulse = 1 + Math.sin(Date.now() * 0.0015) * 0.02;
+    const scale = baseScale * pulse;
+
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.scale(scale, scale);
+    ctx.drawImage(umbrellaImg, -umbrellaImg.width / 2, -umbrellaImg.height / 2);
+    ctx.restore();
 }
 
 function animate() {
     ctx.clearRect(0, 0, width, height);
     
-    snowflakes.forEach(s => {
+    // Background gradient is handled by CSS
+    
+    snowflakesArray.forEach(s => {
         s.update();
         s.draw();
     });
     
-    raindrops.forEach(r => {
+    raindropsArray.forEach(r => {
         r.update();
         r.draw();
     });
-
-    drawFrogAndUmbrella();
+    
+    drawFrog();
+    drawUmbrella();
     
     requestAnimationFrame(animate);
 }
 
-animate();
+frogImg.onload = () => {
+    requestAnimationFrame(animate);
+}
 
-// Audio handling
-const audioToggle = document.getElementById('audioToggle');
-const volumeSlider = document.getElementById('volumeSlider');
-const toggleText = document.getElementById('toggleText');
-
-const rainAudio = new Audio('assets/rain_soft.mp3');
-rainAudio.loop = true;
-
-let isPlaying = false;
-
-audioToggle.addEventListener('click', () => {
-    if (isPlaying) {
-        rainAudio.pause();
-        toggleText.innerText = 'Listen to the rain';
-    } else {
-        rainAudio.play();
-        toggleText.innerText = 'Quiet the rain';
+// Ensure the animation starts even if images fail to load
+umbrellaImg.onload = () => {
+    if (!frogImg.complete) {
+        requestAnimationFrame(animate);
     }
-    isPlaying = !isPlaying;
-});
-
-volumeSlider.addEventListener('input', (e) => {
-    rainAudio.volume = e.target.value;
-});
-
-// Sleepy toggle
-const sleepyToggle = document.getElementById('sleepyToggle');
-const sleepyText = document.getElementById('sleepyText');
-
-// Create sleepy overlay
-const overlay = document.createElement('div');
-overlay.className = 'sleepy-overlay';
-document.body.appendChild(overlay);
-
-let isSleepy = false;
-
-sleepyToggle.addEventListener('click', () => {
-    isSleepy = !isSleepy;
-    overlay.classList.toggle('active');
-    sleepyText.innerText = isSleepy ? 'Wake up' : 'Fall asleep';
-});
+}
