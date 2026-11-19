@@ -72,9 +72,7 @@ class Raindrop {
         }
 
         this.y += this.speed;
-        if (this.y > height) {
-            this.reset();
-        }
+        if (this.y > height) this.reset();
     }
 }
 
@@ -87,84 +85,115 @@ class Snowflake {
         this.y = Math.random() * -height;
         this.size = Math.random() * 3 + 1;
         this.speed = Math.random() * 1 + 0.5;
-        this.depth = Math.random();
-        this.opacity = (this.depth * 0.4) + 0.2;
-        this.shadowBlur = this.depth * 5;
+        this.opacity = Math.random() * 0.5 + 0.3;
+        this.drift = Math.random() * 1 - 0.5;
     }
     draw() {
-        ctx.beginPath();
+        ctx.save();
         ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
-        ctx.shadowBlur = this.shadowBlur;
-        ctx.shadowColor = 'white';
+        ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.shadowColor = 'transparent';
+        ctx.restore();
     }
     update() {
         this.y += this.speed;
-        if (this.y > height) {
-            this.reset();
-        }
+        this.x += this.drift;
+        if (this.y > height) this.reset();
     }
 }
+
+const raindropsArray = Array.from({ length: 100 }, () => new Raindrop());
+const snowflakesArray = Array.from({ length: 150 }, () => new Snowflake());
+
+let isSleepy = false;
+const sleepyOverlay = document.createElement('div');
+sleepyOverlay.className = 'sleepy-overlay';
+document.body.appendChild(sleepyOverlay);
+
+function toggleSleepy() {
+    isSleepy = !isSleepy;
+    sleepyOverlay.classList.toggle('active', isSleepy);
+    document.getElementById('sleepyText').innerText = isSleepy ? 'Wake up' : 'Go to sleep';
+}
+
+document.getElementById('sleepyToggle').addEventListener('click', toggleSleepy);
+
+// Audio Setup
+let audioCtx = null;
+let rainNode = null;
+let filterNode = null;
+let gainNode = null;
+
+async function setupAudio() {
+    if (audioCtx) return;
+    
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // Create a noise source for rain
+    const bufferSize = 2 * audioCtx.sampleRate;
+    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+    }
+    
+    const whiteNoise = audioCtx.createBufferSource();
+    whiteNoise.buffer = noiseBuffer;
+    whiteNoise.loop = true;
+    
+    // The 'muffled' effect: Low Pass Filter
+    filterNode = audioCtx.createBiquadFilter();
+    filterNode.type = 'lowpass';
+    filterNode.frequency.setValueAtTime(800, audioCtx.currentTime); // Low frequency for muffled feel
+    
+    gainNode = audioCtx.createGain();
+    gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+    
+    whiteNoise.connect(filterNode);
+    filterNode.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    whiteNoise.start();
+    rainNode = whiteNoise;
+}
+
+const audioToggle = document.getElementById('audioToggle');
+const volumeSlider = document.getElementById('volumeSlider');
+
+audioToggle.addEventListener('click', async () => {
+    if (!audioCtx) {
+        await setupAudio();
+        document.getElementById('toggleText').innerText = 'Pause the rain';
+    } else if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+        document.getElementById('toggleText').innerText = 'Pause the rain';
+    } else if (audioCtx.state === 'running') {
+        audioCtx.suspend();
+        document.getElementById('toggleText').innerText = 'Listen to the rain';
+    }
+});
+
+volumeSlider.addEventListener('input', (e) => {
+    if (gainNode) {
+        gainNode.gain.setValueAtTime(e.target.value, audioCtx.currentTime);
+    }
+});
 
 function animate() {
     ctx.clearRect(0, 0, width, height);
     
-    snowflakes.forEach(s => s.update());
-    snowflakes.forEach(s => s.draw());
+    raindropsArray.forEach(drop => {
+        drop.update();
+        drop.draw();
+    });
     
-    raindrops.forEach(r => s.update()); // Error: s is not defined here, should be r
-    raindrops.forEach(r => r.draw());
+    snowflakesArray.forEach(flake => {
+        flake.update();
+        flake.draw();
+    });
     
-    // Draw frog silhouette
-    ctx.save();
-    ctx.translate(width / 2, height / 2);
-    ctx.rotate(-0.05);
-    ctx.globalAlpha = 0.7;
-    ctx.drawImage(frogImg, -20, -20, 40, 40);
-    ctx.restore();
-    
-    // Draw umbrella
-    ctx.save();
-    ctx.translate(width / 2, 5);n    ctx.rotate(-0.05);
-    ctx.globalAlpha = 0.8;
-    ctx.drawImage(umbrellaImg, -30, -30, 60, 60);
-    ctx.restore();
-} 
-
-function init() {
-    raindrops = Array.from({ length: 150 }, () => new Raindrop());
-    snowflakes = Array.from({ length: 100 }, () => new Snowflake());
+    requestAnimationFrame(animate);
 }
 
-init();
 animate();
-
-function loop() {
-    // The loop function is not fully implemented in the animate function
-    // animate() is called once, and only if the window is resize event happens
-    // animate() animate() is not in a loop loop() own
-    // animate() is called once,’
-}
-
-window.addEventListener('resize', () => {
-    resize();
-    init();
-}
-);
-
-// Correcting the loop logic to use requestAnimationFrame
-function render() {
-    animate();
-    requestAnimationFrame(render);
-}
-
-render();
-
-// Audio logic
-const audioToggle = document.getElementById('audioToggle');
-const volumeSlider = document.getElementById('volumeSlider');
-const audioCtx = new (window.AudioContext || window.AudioContext)();
-const audio// ... [context trimmed]
