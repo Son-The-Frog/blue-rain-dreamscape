@@ -58,6 +58,9 @@ canvas {
     border: 1px solid rgba(90, 122, 154, 0.3);
 }
 #audioToggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     padding: 10px 20px;
     background: rgba(100, 149, 237, 0.3);
     border: 1px solid #5a7a9a;
@@ -70,6 +73,11 @@ canvas {
 }
 #audioToggle:hover {
     background: rgba(100, 149, 237, 0.6);
+}
+.mute-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
 }
 #volumeSlider {
     cursor: pointer;
