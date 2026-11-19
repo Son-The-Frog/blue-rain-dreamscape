@@ -1,13 +1,11 @@
 # Blue Rain Dreamscape
 
-A quiet, generative art piece where blue raindrops fall onto a white, snowy plaza. It is meant to feel sleepy and peaceful.
+A peaceful generative art piece depicting a sleepy dream of blue raindrops falling on a snowy plaza.
 
 ## Features
-- Generative animation of falling blue raindrops using HTML5 Canvas.
-- A soft, dreamy color palette of whites and blues.
-- A short story describing the description of the dream.
-- A soft rain soundscape with volume control.
-- A 'sleepy' mode that slowly dims the screen to simulate falling asleep.
-
-## How to run
-Simply open `index.html` in any modern web browser.
+- Generative blue raindrops with glowing effects
+- Gentle snowfall simulation
+- Interactive frog silhouette with an umbrella
+- Muffled rain audio landscape
+- Sleep/Wake toggle for atmospheric shift
+- Shimmering frozen ground effect
