@@ -60,7 +60,7 @@ rainSound.loop = true;
 
 let isPlaying = false;
 
-audioToggle.addEventListener('click', () => {
+function toggleRainSound() {
     if (isPlaying) {
         rainSound.pause();
         audioToggle.textContent = 'Listen to the rain';
@@ -69,4 +69,13 @@ audioToggle.addEventListener('click', () => {
         audioToggle.textContent = 'Stop the rain';
     }
     isPlaying = !isPlaying;
-});
+}
+
+audioToggle.addEventListener('click', toggleRainSound);
+
+// Start audio on first interaction
+window.addEventListener('click', () => {
+    if (!isPlaying) {
+        toggleRainSound();
+    }
+}, { once: true });
