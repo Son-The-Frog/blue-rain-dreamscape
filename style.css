@@ -6,6 +6,16 @@ body, html {
     min-height: 100%;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+
+.fade-in {
+    animation: fadeInPage 3s ease-in forwards;
+}
+
+@keyframes fadeInPage {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
 canvas {
     display: block;
     position: fixed;
@@ -104,37 +114,6 @@ canvas {
 #sleepyToggle:hover {
     background: rgba(100, 149, 237, 0.6);
 }
-.sleepy-dim {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: black;
-    pointer-events: none;
-    z-index: 5;
-    transition: opacity 4s ease-in-out;
-    opacity: 0;
-}
-.sleepy-active { 
-    opacity: 0.7 !important;
-}
-.sleepy-dim-overlay { 
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    pointer-events: none;
-    z-index: 5;
-    transition: opacity 3s ease-in-out;
-    opacity: 0;
-}
-.sleepy-dim-overlay.active {
-    opacity: 0.6;
-} 
-// Corrected CSS to just use one overlay
 .sleepy-overlay {
     position: fixed;
     top: 0;
@@ -149,4 +128,4 @@ canvas {
 }
 .sleepy-overlay.active {
     opacity: 0.6;
-} 
+}
