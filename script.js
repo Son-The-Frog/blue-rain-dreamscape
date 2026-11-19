@@ -40,6 +40,9 @@ class Raindrop {
         const pulse = Math.sin(Date.now() * 0.003 + this.pulseOffset) * 0.1 + 0.5;
         const currentOpacity = this.opacity * pulse;
         
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        
         const gradient = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.length);
         gradient.addColorStop(0, `rgba(100, 149, 237, 0)`);
         gradient.addColorStop(0.4, `rgba(100, 149, 237, ${currentOpacity})`);
@@ -53,8 +56,8 @@ class Raindrop {
         ctx.moveTo(this.x, this.y);
         ctx.lineTo(this.x, this.y + this.length);
         ctx.stroke();
-        ctx.shadowBlur = 0;
-        ctx.shadowColor = 'transparent';
+        
+        ctx.restore();
     }
     update() {
         const dx = mouseX - this.x;
@@ -100,21 +103,28 @@ class Snowflake {
     }
     update() {
         this.y += this.speed;
+        this.x += Math.sin(Date.now() * 0.001 + this.depth * 10) * 0.5;
         if (this.y > height) {
             this.reset();
         }
     }
 }
 
-function init() {
-    raindrops = [];
-    snowflakes = [];
-    for (let i = 0; i < 100; i++) {
-        raindrops.push(new Raindrop());
-    }
-    for (let i = 0; i < 100; i++) {
-        snowflakes.push(new Snowflake());
-    }
+const rainCount = 120;
+const snowCount = 150;
+for (let i = 0; i < rainCount; i++) raindrops.push(new Raindrop());
+for (let i = 0; i < snowCount; i++) snowflakes.push(new Snowflake());
+
+function drawFrog() {
+    const frogX = width * 0.5;
+    const frogY = height * 0.85;
+    const frogSize = 60;
+    ctx.drawImage(frogImg, frogX - frogSize / 2, frogY - frogSize / 2, frogSize, frogSize);
+    
+    const umbrellaX = frogX - 10;
+    const umbrellaY = frogY - 40;
+    const umbrellaSize = 100;
+    ctx.drawImage(umbrellaImg, umbrellaX, umbrellaY, umbrellaSize, umbrellaSize);
 }
 
 function animate() {
@@ -129,9 +139,96 @@ function animate() {
         r.update();
         r.draw();
     });
-
+    
+    drawFrog();
+    
     requestAnimationFrame(animate);
 }
 
-init();
 animate();
+
+const audioToggle = document.getElementById('audioToggle');
+const volumeSlider = document.getElementById('volumeSlider');
+const toggleText = document.getElementById('toggleText');
+
+let audioCtx = null;
+let rainNoise = null;
+let gainNode = null;
+
+function initAudio() {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    const bufferSize = 2 * audioCtx.sampleRate;
+    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+    }
+
+    rainNoise = audioCtx.createBufferSource();
+    rainNoise.buffer = noiseBuffer;
+    rainNoise.loop = true;
+
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(400, audioCtx.currentTime);
+
+    gainNode = audioCtx.createGain();
+    gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+
+    rainNoise.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    rainNoise.start();
+}
+
+audioToggle.addEventListener('click', () => {
+    if (!audioCtx) {
+        initAudio();
+        toggleText.innerText = 'Stop the rain';
+    } else if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+        toggleText.innerText = 'Stop the rain';
+    } else if (audioCtx.state === 'running') {
+        audioCtx.suspend();
+        toggleText.innerText = 'Listen to the rain';
+    }
+});
+
+volumeSlider.addEventListener('input', (e) => {
+    if (gainNode) {
+        gainNode.gain.setValueAtTime(e.target.value, audioCtx.currentTime);
+    }
+});
+
+const sleepyToggle = document.getElementById('sleepyToggle');
+const sleepyText = document.getElementById('sleepyText');
+const body = document.body;
+let isSleepy = false;
+
+sleepyToggle.addEventListener('click', () => {
+    isSleepy = !isSleepy;
+    if (isSleepy) {
+        body.classList.add('sleepy-overlay');
+        // This is a bug: the CSS handles opacity via .active, not just the class
+        // I'll fix the logic here to match the CSS
+        document.querySelector('.sleepy-overlay') || createSleepyOverlay();
+        const overlay = document.querySelector('.sleepy-overlay');
+        if(overlay) overlay.classList.add('active');
+        sleepyText.innerText = 'Wake up';
+    } else {
+        const overlay = document.querySelector('.sleepy-overlay');
+        if(overlay) overlay.classList.remove('active');
+        sleepyText.innerText = 'Go to sleep';
+    }
+});
+
+function createSleepyOverlay() {
+    const overlay = document.createElement('div');
+    overlay.className = 'sleepy-overlay';
+    body.appendChild(overlay);
+}
+
+// Small fix for the issue #3: Ensure overlay exists
+createSleepyOverlay();
