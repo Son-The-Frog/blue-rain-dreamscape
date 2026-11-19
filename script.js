@@ -26,9 +26,14 @@ class Raindrop {
         ctx.beginPath();
         ctx.strokeStyle = `rgba(100, 149, 237, ${this.opacity})`;
         ctx.lineWidth = 1.5;
+        ctx.shadowBlur = 5;
+        ctx.shadowColor = `rgba(100, 149, 237, ${this.opacity})`;
         ctx.moveTo(this.x, this.y);
         ctx.lineTo(this.x, this.y + this.length);
         ctx.stroke();
+        // Reset shadow so it doesn't affect other drawings
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'transparent';
     }
     update() {
         this.y += this.speed;
