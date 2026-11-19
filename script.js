@@ -18,12 +18,8 @@ class Raindrop {
     reset() {
         this.x = Math.random() * width;
         this.y = Math.random() * -height;
-        // Varying the length to create a sense of depth
         this.length = Math.random() * 20 + 10;
         this.speed = Math.random() * 5 + 5;
-        
-        // The smaller drops will be more transparent to simulate depth
-        // We map the length (10-30) to an opacity range (0.1 to 0.4)
         this.opacity = (this.length / 30) * 0.3 + 0.1;
     }
     draw() {
@@ -35,11 +31,10 @@ class Raindrop {
         ctx.moveTo(this.x, this.y);
         ctx.lineTo(this.x, this.y + this.length);
         ctx.stroke();
-        // Reset shadow so it doesn's affect other drawings
         ctx.shadowBlur = 0;
         ctx.shadowColor = 'transparent';
     }
-    update() { 
+    update() {
         this.y += this.speed;
         if (this.y > height) {
             this.reset();
@@ -88,9 +83,36 @@ volumeSlider.addEventListener('input', (e) => {
     rainSound.volume = e.target.value;
 });
 
-// Start audio on first interaction
 window.addEventListener('click', () => {
     if (!isPlaying) {
         toggleRainSound();
     }
 }, { once: true });
+
+// Sleepy Mode
+const sleepyToggle = document.getElementById('sleepyToggle');
+const sleepyText = document.getElementById('sleepyText');
+
+// Create the dimming overlay
+const dimOverlay = document.createElement('div');
+dimOverlay.className = 'sleepy-overlay';
+document.body.appendChild(dimOverlay);
+
+let isSleepy = false;
+
+function toggleSleepyMode() {
+    isSleepy = !isSleepy;
+    if (isSleepy) {
+        dimOverlay.classList.add('active');
+        sleepyText.textContent = 'Wake up';
+    } else {
+        dimOverlay.classList.remove('active');
+        sleepyText.textContent = 'Go to sleep';
+    }    
+}
+
+// I want it to start sleepy by default or be a toggle
+// Let's make the button text reflect the state
+sleepyText.textContent = 'Go to sleep';
+
+sleepyToggle.addEventListener('click', toggleSleepyMode);

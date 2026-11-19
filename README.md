@@ -7,6 +7,7 @@ A quiet, generative art piece where blue raindrops fall onto a white, snowy plaz
 - A soft, dreamy color palette of whites and blues.
 - A short story describing the description of the dream.
 - A soft rain soundscape with volume control.
+- A 'sleepy' mode that slowly dims the screen to simulate falling asleep.
 
 ## How to run
 Simply open `index.html` in any modern web browser.
