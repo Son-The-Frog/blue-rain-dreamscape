@@ -18,10 +18,13 @@ class Raindrop {
     reset() {
         this.x = Math.random() * width;
         this.y = Math.random() * -height;
+        // Varying the length to create a sense of depth
         this.length = Math.random() * 20 + 10;
         this.speed = Math.random() * 5 + 5;
-        // Lowered opacity to make them feel more ethereal and soft
-        this.opacity = Math.random() * 0.3 + 0.1;
+        
+        // The smaller drops will be more transparent to simulate depth
+        // We map the length (10-30) to an opacity range (0.1 to 0.4)
+        this.opacity = (this.length / 30) * 0.3 + 0.1;
     }
     draw() {
         ctx.beginPath();
@@ -36,7 +39,7 @@ class Raindrop {
         ctx.shadowBlur = 0;
         ctx.shadowColor = 'transparent';
     }
-    update() {
+    update() { 
         this.y += this.speed;
         if (this.y > height) {
             this.reset();
