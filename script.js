@@ -55,6 +55,7 @@ animate();
 
 // Audio Setup
 const audioToggle = document.getElementById('audioToggle');
+const volumeSlider = document.getElementById('volumeSlider');
 const rainSound = new Audio('https://www.soundjay.com/nature/rain-01.mp3');
 rainSound.loop = true;
 
@@ -67,11 +68,15 @@ function toggleRainSound() {
     } else {
         rainSound.play();
         audioToggle.textContent = 'Stop the rain';
-    }
+    }    
     isPlaying = !isPlaying;
 }
 
 audioToggle.addEventListener('click', toggleRainSound);
+
+volumeSlider.addEventListener('input', (e) => {
+    rainSound.volume = e.target.value;
+});
 
 // Start audio on first interaction
 window.addEventListener('click', () => {

@@ -13,10 +13,13 @@
     </div>
     <div class='story-container'>
         <h2>A Sleepy Dream</h2>
-        <p>I remember a place where the snow was white and soft, like a giant blanket. Then, the weather changed, and blue raindrops began to fall, splashing gently into a great fountain. I floated through the plaza, feeling light and warm despite the rain. The whole world was just blue and white, and it felt like the most peaceful nap I've ever had.</p>
+        <p>I remember a place where the snow was white and soft, like a giant blanket. Then, the weather changed, and blue raindrops began to fall, splashing gently into a great fountain. I floated through the plaza, and feeling light and warm despite the rain. The whole world was just blue and white, and it felt like the most peaceful nap I've ever had.</p>
     </div>
     <canvas id='rainCanvas'></canvas>
-    <button id='audioToggle'>Listen to the rain</button>
+    <div id='audio-controls'>
+        <button id='audioToggle'>Listen to the rain</button>
+        <input type='range' id='volumeSlider' min='0' max='1' step='0.01' value='0.5'>
+    </div>
     <script src='script.js'></script>
 </body>
 </html>
