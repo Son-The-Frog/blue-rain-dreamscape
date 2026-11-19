@@ -68,11 +68,11 @@ class Raindrop {
             const angle = Math.atan2(dy, dx);
             const push = 2;
             this.x += Math.cos(angle) * -push;
-            this.y += Math.sin(angle) * -push;
         }
-
         this.y += this.speed;
-        if (this.y > height) this.reset();
+        if (this.y > height) {
+            this.reset();
+        }
     }
 }
 
@@ -86,11 +86,12 @@ class Snowflake {
         this.size = Math.random() * 3 + 1;
         this.speed = Math.random() * 1 + 0.5;
         this.opacity = Math.random() * 0.5 + 0.3;
-        this.drift = Math.random() * 1 - 0.5;
+        this.wind = Math.random() * 1 - 0.5;
     }
     draw() {
         ctx.save();
-        ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+        ctx.globalAlpha = this.opacity;
+        ctx.fillStyle = 'white';
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fill();
@@ -98,102 +99,127 @@ class Snowflake {
     }
     update() {
         this.y += this.speed;
-        this.x += this.drift;
-        if (this.y > height) this.reset();
+        this.x += this.wind;
+        if (this.y > height) {
+            this.reset();
+        }
     }
 }
 
-const raindropsArray = Array.from({ length: 100 }, () => new Raindrop());
-const snowflakesArray = Array.from({ length: 150 }, () => new Snowflake());
-
-let isSleepy = false;
-const sleepyOverlay = document.createElement('div');
-sleepyOverlay.className = 'sleepy-overlay';
-document.body.appendChild(sleepyOverlay);
-
-function toggleSleepy() {
-    isSleepy = !isSleepy;
-    sleepyOverlay.classList.toggle('active', isSleepy);
-    document.getElementById('sleepyText').innerText = isSleepy ? 'Wake up' : 'Go to sleep';
-}
-
-document.getElementById('sleepyToggle').addEventListener('click', toggleSleepy);
-
-// Audio Setup
-let audioCtx = null;
-let rainNode = null;
-let filterNode = null;
-let gainNode = null;
-
-async function setupAudio() {
-    if (audioCtx) return;
-    
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    
-    // Create a noise source for rain
-    const bufferSize = 2 * audioCtx.sampleRate;
-    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-    const output = noiseBuffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-        output[i] = Math.random() * 2 - 1;
-    }
-    
-    const whiteNoise = audioCtx.createBufferSource();
-    whiteNoise.buffer = noiseBuffer;
-    whiteNoise.loop = true;
-    
-    // The 'muffled' effect: Low Pass Filter
-    filterNode = audioCtx.createBiquadFilter();
-    filterNode.type = 'lowpass';
-    filterNode.frequency.setValueAtTime(800, audioCtx.currentTime); // Low frequency for muffled feel
-    
-    gainNode = audioCtx.createGain();
-    gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
-    
-    whiteNoise.connect(filterNode);
-    filterNode.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-    
-    whiteNoise.start();
-    rainNode = whiteNoise;
-}
-
-const audioToggle = document.getElementById('audioToggle');
-const volumeSlider = document.getElementById('volumeSlider');
-
-audioToggle.addEventListener('click', async () => {
-    if (!audioCtx) {
-        await setupAudio();
-        document.getElementById('toggleText').innerText = 'Pause the rain';
-    } else if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-        document.getElementById('toggleText').innerText = 'Pause the rain';
-    } else if (audioCtx.state === 'running') {
-        audioCtx.suspend();
-        document.getElementById('toggleText').innerText = 'Listen to the rain';
-    }
-});
-
-volumeSlider.addEventListener('input', (e) => {
-    if (gainNode) {
-        gainNode.gain.setValueAtTime(e.target.value, audioCtx.currentTime);
-    }
-});
+for (let i = 0; i < 100; i++) raindrops.push(new Raindrop());
+for (let i = 0; i < 50; i++) snowflakes.push(new Snowflake());
 
 function animate() {
     ctx.clearRect(0, 0, width, height);
     
-    raindropsArray.forEach(drop => {
-        drop.update();
-        drop.draw();
+    snowflakes.forEach(s => {
+        s.update();
+        s.draw();
     });
     
-    snowflakesArray.forEach(flake => {
-        flake.update();
-        flake.draw();
+    raindrops.forEach(r => {
+        r.update();
+        r.draw();
     });
+    
+    ctx.save();
+    ctx.globalAlpha = 0.6;
+    ctx.drawImage(frogImg, mouseX - 20, mouseY - 20, 40, 40);
+    ctx.restore();
     
     requestAnimationFrame(animate);
 }
-
 animate();
+
+// Audio Logic
+let audioCtx = null;
+let rainSource = null;
+let rainGain = null;
+let lowPassFilter = null;
+let isPlaying = false;
+
+async function initAudio() {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // LowPass Filter for that muffled, sleepy feel
+    lowPassFilter = audioCtx.createBiquadFilter();
+    lowPassFilter.type = 'lowpass';
+    lowPassFilter.frequency.setValueAtTime(800, audioCtx.currentTime);
+    
+    rainGain = audioCtx.createGain();
+    rainGain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+    
+    // Use a white noise generator for seamless loop
+    const bufferSize = 2 * audioCtx.sampleRate;
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+    }
+    
+    rainSource = audioCtx.createBufferSource();
+    rainSource.buffer = buffer;
+    rainSource.loop = true;
+    
+    // Connect nodes: Source -> Filter -> Gain -> Destination
+    rainSource.connect(lowPassFilter);
+    lowPassFilter.connect(rainGain);
+    rainGain.connect(audioCtx.destination);
+    
+    rainSource.start();
+}
+
+const audioToggle = document.getElementById('audioToggle');
+const toggleText = document.getElementById('toggleText');
+const volumeSlider = document.getElementById('volumeSlider');
+
+audioToggle.addEventListener('click', async () => {
+    if (!audioCtx) {
+        await initAudio();
+        isPlaying = true;
+        toggleText.innerText = 'Stop the rain';
+    } else if (isPlaying) {
+        rainGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+        isPlaying = false;
+        toggleText.innerText = 'Listen to the rain';
+    } else {
+        rainGain.gain.setTargetAtTime(0.5, audioCtx.currentTime, 0.1);
+        isPlaying = true;
+        toggleText.innerText = 'Stop the rain';
+    }
+});
+
+volumeSlider.addEventListener('input', (e) => {
+    if (rainGain) {
+        const vol = parseFloat(e.target.value);
+        rainGain.gain.setTargetAtTime(vol, audioCtx.currentTime, 0.1);
+    }
+});
+
+// Sleepy Toggle Logic
+let isSleepy = false;
+const sleepyToggle = document.getElementById('sleepyToggle');
+const sleepyText = document.getElementById('sleepyText');
+
+// Create sleepy overlay dynamically
+const sleepyOverlay = document.createElement('div');
+sleepyOverlay.className = 'sleepy-overlay';
+document.body.appendChild(sleepyOverlay);
+
+sleepyToggle.addEventListener('click', () => {
+    isSleepy = !isSleepy;
+    
+    if (isSleepy) {
+        sleepyText.innerText = 'Wake up';
+        sleepyOverlay.classList.add('active');
+        if (lowPassFilter) {
+            lowPassFilter.frequency.setTargetAtTime(400, audioCtx.currentTime, 1.5);
+        }
+    } else {
+        sleepyText.innerText = 'Go to sleep';
+        sleepyOverlay.classList.remove('active');
+        if (lowPassFilter) {
+            lowPassFilter.frequency.setTargetAtTime(800, audioCtx.currentTime, 1.5);
+        }
+    }
+});
