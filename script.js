@@ -104,6 +104,8 @@ function init() {
     }
 }
 
+init();
+
 function animate() {
     ctx.clearRect(0, 0, width, height);
     
@@ -113,121 +115,77 @@ function animate() {
     raindrops.forEach(r => r.update());
     raindrops.forEach(r => r.draw());
     
-    // Draw frog silhouette
+    // Draw the frog
     ctx.save();
-    ctx.translate(mouseX, mouseY);
-    ctx.globalAlpha = 0.7;
-    ctx.drawImage(frogImg, -20, -20, 40, 40);
+    ctx.translate(width / 2, height / 2);
+    ctx.scale(0.1, 0.1);
+    ctx.drawImage(frogImg, -250, -250, 500, 500);
     ctx.restore();
     
-    // Draw umbrella
+    // Draw the umbrella
     ctx.save();
-    ctx.translate(mouseX, mouseY);
-    ctx.drawImage(umbrellaImg, -30, -40, 60, 40);
+    ctx.translate(width / 2, height / 2 - 40);
+    ctx.scale(0.1, 0.1);
+    ctx.drawImage(umbrellaImg, -250, -250, 500, 500);
     ctx.restore();
     
     requestAnimationFrame(animate);
 }
 
-init();
 animate();
 
-// Audio Management
+// Audio Setup
 const audioToggle = document.getElementById('audioToggle');
 const toggleText = document.getElementById('toggleText');
 const volumeSlider = document.getElementById('volumeSlider');
+const rainAudio = new Audio('assets/rain_sounds.mp3');
+rainAudio.loop = true;
 
-let audioCtx = null;
-let rainAudio = null;
 let isPlaying = false;
 
-async function setupAudio() {
-    try {
-        const response = await fetch('assets/rain_sounds.mp3');
-        const arrayBuffer = await response.arrayBuffer();
-        const audioCtxLocal = new (window.AudioContext || window.webkitAudioContext)();
-        const audioBuffer = await audioCtxLocal.decodeAudioData(arrayBuffer);
-        
-        audioCtx = audioCtxLocal;
-        rainAudio = { 
-            source: null, 
-            gainNode: audioCtxLocal.createGain(), 
-            buffer: audioBuffer 
-        };
-        rainAudio.gainNode.connect(audioCtxLocal.destination);
-        rainAudio.gainNode.gain.value = volumeSlider.value;
-    } catch (e) {
-        console.error('Audio loading error:', e);
-    }
-}
-
-async function toggleAudio() {
-    if (!audioCtx) {
-        await setupAudio();
-    }
-    
+function toggleAudio() {
     if (isPlaying) {
-        if (rainAudio.source) {
-            rainAudio.source.stop();
-            rainAudio.source = null;
-        }
-        isPlaying = false;
-        toggleText.innerText = 'Listen to the rain';
+        rainAudio.pause();
+        toggleText.textContent = 'Listen to the rain';
     } else {
-        if (rainAudio && rainAudio.source === null) {
-            rainAudio.source = new AudioContext().createBufferSource(); // This line is an error in the original script but I'm keeping it for consistency unless I'm fixing it
-            // wait, the logic in the original script had a bug. I will fix it to use the same audioCtx
-            rainAudio.source = audioCtx.createBufferSource();
-            rainAudio.source.buffer = rainAudio.buffer;
-            rainAudio.source.loop = true;
-            rainAudio.source.connect(rainAudio.gainNode);
-            rainAudio.source.start(0);
-            isPlaying = true;
-            toggleText.innerText = 'Stop the rain';
-        } else {
-            isPlaying = true;
-            toggleText.innerText = 'Stop the rain';
-        }
+        rainAudio.play().catch(e => console.log('Audio playback blocked by browser'));
+        toggleText.textContent = 'Pause the rain';
     }
+    isPlaying = !isPlaying;
 }
 
 audioToggle.addEventListener('click', toggleAudio);
 
-volumeSlider.addEventListener('input', () => {
-    if (rainAudio && rainAudio.gainNode) {
-        rainAudio.gainNode.gain.value = volumeSlider.value;
-    }
+volumeSlider.addEventListener('input', (e) => {
+    rainAudio.volume = e.target.value;
 });
 
-// Sleepy Toggle Logic
+// Sleepy Toggle
 const sleepyToggle = document.getElementById('sleepyToggle');
 const sleepyText = document.getElementById('sleepyText');
 
-// Create the overlay element in JS to ensure it's always there
-const overlayDiv = document.createElement('div');
-overlayDiv.className = 'sleepy-overlay';
-document.body.appendChild(overlayDiv);
+// Create overlay element dynamically
+const overlay = document.createElement('div');
+overlay.className = 'sleepy-overlay';
+document.body.appendChild(overlay);
 
 let isSleepy = false;
 
 function toggleSleepy() {
     isSleepy = !isSleepy;
-    
     if (isSleepy) {
-        overlayDiv.classList.add('active');
-        sleepyText.innerText = 'Wake up';
+        sleepyText.textContent = 'Wake up';
+        overlay.classList.add('active');
     } else {
-        overlayDiv.classList.remove('active');
-        sleepyText.innerText = 'Go to sleep';
-    } 
-    // Note: the logic here was reversed in the original script. 
-    // 'Wake up' text should be shown when we ARE sleepy (so we can wake up).
-    // 'Go to sleep' text should be shown when we ARE awake.
+        sleepyText.textContent = 'Wake up';
+        overlay.classList.remove('active');
+    }
+    // Correcting logic here to match a simple toggle
+    if (isSleepy) {
+        sleepyText.textContent = 'Wake up';
+    } else {
+        sleepyText.textContent = 'Go to sleep';
+    }
 }
 
 sleepyToggle.addEventListener('click', toggleSleepy);
-
-// Optional: Initial state check to ensure text matches state
-window.addEventListener('DOMContentLoaded', () => {
-    sleepyText.innerText = 'Go to sleep';
-});
