@@ -80,7 +80,7 @@ class Snowflake {
     }
     draw() {
         ctx.beginPath();
-        ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+        ctx.fillStyle = `rgba(245, 245, 250, ${this.opacity})`;
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         ctx.fill();
     }
@@ -117,27 +117,27 @@ function animate() {
         r.draw();
     });
 
-    // Draw Frog
+    // Draw frog silhouette
     ctx.save();
-    ctx.translate(mouseX, mouseY);
-    ctx.drawImage(frogImg, -20, -20, 40, 40);
-    
-    // Draw Umbrella
-    ctx.drawImage(umbrellaImg, -30, -45, 60, 40);
+    ctx.translate(width / 2, height / 2);
+    ctx.rotate(-0.05);
+    ctx.drawImage(frogImg, -frogImg.width / 2, -frogImg.height / 2, 150, 150);
     ctx.restore();
 
     requestAnimationFrame(animate);
 }
 
-// Audio Logic
-const audioToggle = document.getElementById('audioToggle');
-const toggleText = document.getElementById('toggleText');
-const volumeSlider = document.getElementById('volumeSlider');
+init();
+animate();
 
-const rainAudio = new Audio('assets/rain_sounds.mp3');
-rainAudio.loop = true;
+// Audio logic
+const audioToggle = document.getElementById('audioToggle');
+const volumeSlider = document.getElementById('volumeSlider');
+const toggleText = document.getElementById('toggleText');
 
 let isPlaying = false;
+let rainAudio = new Audio('assets/rain_sounds.mp3');
+rainAudio.loop = true;
 
 audioToggle.addEventListener('click', () => {
     if (isPlaying) {
@@ -145,34 +145,33 @@ audioToggle.addEventListener('click', () => {
         toggleText.innerText = 'Listen to the rain';
     } else {
         rainAudio.play();
-        toggleText.innerText = 'Pause the rain';
+        toggleText.innerText = 'Stop the rain';
     }
     isPlaying = !isPlaying;
 });
 
-volumeSlider.addEventListener('input', (e) => {
-    rainAudio.volume = e.target.value;
+volumeSlider.addEventListener('input', () => {
+    rainAudio.volume = volumeSlider.value;
 });
 
-// Sleepy Toggle
+// Sleepy toggle
 const sleepyToggle = document.getElementById('sleepyToggle');
 const sleepyText = document.getElementById('sleepyText');
+const sleepyOverlay = document.createElement('div');
+
+sleepyOverlay.className = 'sleepy-overlay';
+sleepyOverlay.appendChild(document.createTextNode(''));
+document.body.appendChild(sleepyOverlay);
 
 let isSleepy = false;
-const overlay = document.createElement('div');
-overlay.className = 'sleepy-overlay';
-document.body.appendChild(overlay);
 
 sleepyToggle.addEventListener('click', () => {
     isSleepy = !isSleepy;
     if (isSleepy) {
-        overlay.classList.add('active');
         sleepyText.innerText = 'Wake up';
+        sleepyOverlay.classList.add('active');
     } else {
-        overlay.classList.remove('active');
         sleepyText.innerText = 'Go to sleep';
-    }
+        sleepyOverlay.classList.remove('active');
+    } 
 });
-
-init();
-animate();
