@@ -2,6 +2,7 @@ const canvas = document.getElementById('rainCanvas');
 const ctx = canvas.getContext('2d');
 let width, height;
 let raindrops = [];
+let snowflakes = [];
 let mouseX = 0, mouseY = 0;
 
 function resize() {
@@ -41,11 +42,9 @@ class Raindrop {
         ctx.shadowColor = 'transparent';
     }
     update() {
-        // Drift based on mouse position
         const dx = mouseX - this.x;
         const dy = mouseY - this.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        const force = 50;
         
         if (distance < 150) {
             const angle = Math.atan2(dy, dx);
@@ -61,48 +60,115 @@ class Raindrop {
     }
 }
 
+class Snowflake {
+    constructor() {
+        this.reset();
+    }
+    reset() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * -height;
+        this.size = Math.random() * 3 + 1;
+        this.speed = Math.random() * 1 + 0.5;
+        this.opacity = Math.random() * 0.5 + 0.3;
+        this.wind = Math.random() * 1 - 0.5;
+    }
+    draw() {
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    update() {
+        this.y += this.speed;
+        this.x += this.wind;
+        
+        if (this.y > height) {
+            this.reset();
+        }
+        if (this.x > width) this.x = 0;
+        if (this.x < 0) this.x = width;
+    }
+}
+
 for (let i = 0; i < 150; i++) {
     raindrops.push(new Raindrop());
+}
+for (let i = 0; i < 80; i++) {
+    snowflakes.push(new Snowflake());
 }
 
 function animate() {
     ctx.clearRect(0, 0, width, height);
+    
+    snowflakes.forEach(flake => {
+        flake.update();
+        flake.draw();
+    });
+
     raindrops.forEach(drop => {
         drop.update();
         drop.draw();
     });
+
     requestAnimationFrame(animate);
 }
 
 animate();
 
-// Audio Setup
+// Audio and Sleepy logic from previous steps
 const audioToggle = document.getElementById('audioToggle');
-const toggleText = document.getElementById('toggleText');
 const volumeSlider = document.getElementById('volumeSlider');
-const rainSound = new Audio('https://www.soundjay.com/nature/rain-01.mp3');
-rainSound.loop = true;
+const toggleText = document.getElementById('toggleText');
 
-let isPlaying = false;
+let audioCtx = null;
+let rainNoise = null;
+let gainNode = null;
 
-function toggleRainSound() {
-    if (isPlaying) {
-        rainSound.pause();
-        toggleText.textContent = 'Listen to the rain';
-    } else {
-        rainSound.play();
-        toggleText.textContent = 'Stop the rain';
-    }    
-    isPlaying = !isPlaying;
+function initAudio() {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const bufferSize = 2 * audioCtx.sampleRate;
+    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1;
+    }
+
+    rainNoise = audioCtx.createBufferSource();
+    rainNoise.buffer = noiseBuffer;
+    rainNoise.loop = true;
+
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 400;
+
+    gainNode = audioCtx.createGain();
+    gainNode.gain.value = volumeSlider.value;
+
+    rainNoise.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    rainNoise.start();
 }
 
-audioToggle.addEventListener('click', toggleRainSound);
-
-volumeSlider.addEventListener('input', (e) => {
-    rainSound.volume = e.target.value;
+audioToggle.addEventListener('click', () => {
+    if (!audioCtx) {
+        initAudio();
+        toggleText.innerText = 'Stop the rain';
+    } else if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+        toggleText.innerText = 'Stop the rain';
+    } else if (audioCtx.state === 'running') {
+        audioCtx.suspend();
+        toggleText.innerText = 'Listen to the rain';
+    }
 });
 
-// Sleepy Mode
+volumeSlider.addEventListener('input', (e) => {
+    if (gainNode) {
+        gainNode.gain.value = e.target.value;
+    }
+});
+
 const sleepyToggle = document.getElementById('sleepyToggle');
 const sleepyText = document.getElementById('sleepyText');
 const overlay = document.createElement('div');
@@ -111,16 +177,8 @@ document.body.appendChild(overlay);
 
 let isSleepy = false;
 
-function toggleSleepyMode() {
-    if (isSleepy) {
-        overlay.classList.remove('active');
-        sleepyText.textContent = 'Go to sleep';
-        isSleepy = false;
-    } else {
-        overlay.classList.add('active');
-        sleepyText.textContent = 'Wake up';
-        isSleepy = true;
-    }    
-}
-
-sleepyToggle.addEventListener('click', toggleSleepyMode);
+sleepyToggle.addEventListener('click', () => {
+    isSleepy = !isSleepy;
+    overlay.classList.toggle('active');
+    sleepyText.innerText = isSleepy ? 'Wake up' : 'Fall asleep';
+});
