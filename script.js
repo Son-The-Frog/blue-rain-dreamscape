@@ -5,6 +5,12 @@ let raindrops = [];
 let snowflakes = [];
 let mouseX = 0, mouseY = 0;
 
+const frogImg = new Image();
+frogImg.src = 'assets/frog_silhouette.png';
+
+const umbrellaImg = new Image();
+umbrellaImg.src = 'assets/blue_umbrella.png';
+
 function resize() {
     width = canvas.width = window.innerWidth;
     height = canvas.height = window.innerHeight;
@@ -90,87 +96,76 @@ class Snowflake {
     }
 }
 
-for (let i = 0; i < 150; i++) {
-    raindrops.push(new Raindrop());
-}
-for (let i = 0; i < 80; i++) {
-    snowflakes.push(new Snowflake());
+const raindropsCount = 150;
+const snowflakesCount = 100;
+for (let i = 0; i < raindropsCount; i++) raindrops.push(new Raindrop());
+for (let i = 0; i < snowflakesCount; i++) snowflakes.push(new Snowflake());
+
+function drawFrogAndUmbrella() {
+    const centerX = width / 2;
+    const centerY = height * 0.8;
+    
+    // Draw Umbrella first (above frog)
+    const umbrellaWidth = 120;
+    const umbrellaHeight = 60;
+    ctx.drawImage(umbrellaImg, centerX - umbrellaWidth / 2, centerY - 80, umbrellaWidth, umbrellaHeight);
+    
+    // Draw Frog underneath
+    const frogWidth = 50;
+    const frogHeight = 50;
+    ctx.drawImage(frogImg, centerX - frogWidth / 2, centerY - 40, frogWidth, frogHeight);
 }
 
 function animate() {
     ctx.clearRect(0, 0, width, height);
     
-    snowflakes.forEach(flake => {
-        flake.update();
-        flake.draw();
+    snowflakes.forEach(s => {
+        s.update();
+        s.draw();
+    });
+    
+    raindrops.forEach(r => {
+        r.update();
+        r.draw();
     });
 
-    raindrops.forEach(drop => {
-        drop.update();
-        drop.draw();
-    });
-
+    drawFrogAndUmbrella();
+    
     requestAnimationFrame(animate);
 }
 
 animate();
 
-// Audio and Sleepy logic from previous steps
+// Audio handling
 const audioToggle = document.getElementById('audioToggle');
 const volumeSlider = document.getElementById('volumeSlider');
 const toggleText = document.getElementById('toggleText');
 
-let audioCtx = null;
-let rainNoise = null;
-let gainNode = null;
+const rainAudio = new Audio('assets/rain_soft.mp3');
+rainAudio.loop = true;
 
-function initAudio() {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const bufferSize = 2 * audioCtx.sampleRate;
-    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-    const output = noiseBuffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-        output[i] = Math.random() * 2 - 1;
-    }
-
-    rainNoise = audioCtx.createBufferSource();
-    rainNoise.buffer = noiseBuffer;
-    rainNoise.loop = true;
-
-    const filter = audioCtx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.value = 400;
-
-    gainNode = audioCtx.createGain();
-    gainNode.gain.value = volumeSlider.value;
-
-    rainNoise.connect(filter);
-    filter.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-    rainNoise.start();
-}
+let isPlaying = false;
 
 audioToggle.addEventListener('click', () => {
-    if (!audioCtx) {
-        initAudio();
-        toggleText.innerText = 'Stop the rain';
-    } else if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-        toggleText.innerText = 'Stop the rain';
-    } else if (audioCtx.state === 'running') {
-        audioCtx.suspend();
+    if (isPlaying) {
+        rainAudio.pause();
         toggleText.innerText = 'Listen to the rain';
+    } else {
+        rainAudio.play();
+        toggleText.innerText = 'Quiet the rain';
     }
+    isPlaying = !isPlaying;
 });
 
 volumeSlider.addEventListener('input', (e) => {
-    if (gainNode) {
-        gainNode.gain.value = e.target.value;
-    }
+    rainAudio.volume = e.target.value;
 });
 
+// Sleepy toggle
 const sleepyToggle = document.getElementById('sleepyToggle');
 const sleepyText = document.getElementById('sleepyText');
+
+// Create sleepy overlay
 const overlay = document.createElement('div');
 overlay.className = 'sleepy-overlay';
 document.body.appendChild(overlay);
