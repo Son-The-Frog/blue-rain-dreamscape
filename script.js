@@ -2,6 +2,7 @@ const canvas = document.getElementById('rainCanvas');
 const ctx = canvas.getContext('2d');
 let width, height;
 let raindrops = [];
+let mouseX = 0, mouseY = 0;
 
 function resize() {
     width = canvas.width = window.innerWidth;
@@ -10,6 +11,11 @@ function resize() {
 
 window.addEventListener('resize', resize);
 resize();
+
+window.addEventListener('mousemove', (e) => {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+});
 
 class Raindrop {
     constructor() {
@@ -35,6 +41,19 @@ class Raindrop {
         ctx.shadowColor = 'transparent';
     }
     update() {
+        // Drift based on mouse position
+        const dx = mouseX - this.x;
+        const dy = mouseY - this.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const force = 50;
+        
+        if (distance < 150) {
+            const angle = Math.atan2(dy, dx);
+            const push = 2;
+            this.x += Math.cos(angle) * -push;
+            this.y += Math.sin(angle) * -push;
+        }
+
         this.y += this.speed;
         if (this.y > height) {
             this.reset();
@@ -83,36 +102,25 @@ volumeSlider.addEventListener('input', (e) => {
     rainSound.volume = e.target.value;
 });
 
-window.addEventListener('click', () => {
-    if (!isPlaying) {
-        toggleRainSound();
-    }
-}, { once: true });
-
 // Sleepy Mode
 const sleepyToggle = document.getElementById('sleepyToggle');
 const sleepyText = document.getElementById('sleepyText');
-
-// Create the dimming overlay
-const dimOverlay = document.createElement('div');
-dimOverlay.className = 'sleepy-overlay';
-document.body.appendChild(dimOverlay);
+const overlay = document.createElement('div');
+overlay.className = 'sleepy-overlay';
+document.body.appendChild(overlay);
 
 let isSleepy = false;
 
 function toggleSleepyMode() {
-    isSleepy = !isSleepy;
     if (isSleepy) {
-        dimOverlay.classList.add('active');
-        sleepyText.textContent = 'Wake up';
-    } else {
-        dimOverlay.classList.remove('active');
+        overlay.classList.remove('active');
         sleepyText.textContent = 'Go to sleep';
+        isSleepy = false;
+    } else {
+        overlay.classList.add('active');
+        sleepyText.textContent = 'Wake up';
+        isSleepy = true;
     }    
 }
-
-// I want it to start sleepy by default or be a toggle
-// Let's make the button text reflect the state
-sleepyText.textContent = 'Go to sleep';
 
 sleepyToggle.addEventListener('click', toggleSleepyMode);
