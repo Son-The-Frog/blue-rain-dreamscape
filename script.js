@@ -104,88 +104,64 @@ function init() {
     }
 }
 
-init();
-
 function animate() {
     ctx.clearRect(0, 0, width, height);
     
-    snowflakes.forEach(s => s.update());
-    snowflakes.forEach(s => s.draw());
+    snowflakes.forEach(s => {
+        s.update();
+        s.draw();
+    });
     
-    raindrops.forEach(r => r.update());
-    raindrops.forEach(r => r.draw());
-    
-    // Draw the frog
-    ctx.save();
-    ctx.translate(width / 2, height / 2);
-    ctx.scale(0.1, 0.1);
-    ctx.drawImage(frogImg, -250, -250, 500, 500);
-    ctx.restore();
-    
-    // Draw the umbrella
-    ctx.save();
-    ctx.translate(width / 2, height / 2 - 40);
-    ctx.scale(0.1, 0.1);
-    ctx.drawImage(umbrellaImg, -250, -250, 500, 500);
-    ctx.restore();
+    raindrops.forEach(r => {
+        r.update();
+        r.draw();
+    });
     
     requestAnimationFrame(animate);
 }
 
+init();
 animate();
 
-// Audio Setup
 const audioToggle = document.getElementById('audioToggle');
-const toggleText = document.getElementById('toggleText');
 const volumeSlider = document.getElementById('volumeSlider');
+const toggleText = document.getElementById('toggleText');
+
 const rainAudio = new Audio('assets/rain_sounds.mp3');
 rainAudio.loop = true;
 
 let isPlaying = false;
 
-function toggleAudio() {
+audioToggle.addEventListener('click', () => {
     if (isPlaying) {
         rainAudio.pause();
         toggleText.textContent = 'Listen to the rain';
     } else {
-        rainAudio.play().catch(e => console.log('Audio playback blocked by browser'));
+        rainAudio.play();
         toggleText.textContent = 'Pause the rain';
     }
     isPlaying = !isPlaying;
-}
-
-audioToggle.addEventListener('click', toggleAudio);
+});
 
 volumeSlider.addEventListener('input', (e) => {
     rainAudio.volume = e.target.value;
 });
 
-// Sleepy Toggle
 const sleepyToggle = document.getElementById('sleepyToggle');
 const sleepyText = document.getElementById('sleepyText');
 
-// Create overlay element dynamically
-const overlay = document.createElement('div');
+let isSleepy = false;
+let overlay = document.createElement('div');
 overlay.className = 'sleepy-overlay';
 document.body.appendChild(overlay);
 
-let isSleepy = false;
-
-function toggleSleepy() {
+sleepyToggle.addEventListener('click', () => {
     isSleepy = !isSleepy;
     if (isSleepy) {
-        sleepyText.textContent = 'Wake up';
         overlay.classList.add('active');
-    } else {
         sleepyText.textContent = 'Wake up';
+    } else {
         overlay.classList.remove('active');
-    }
-    // Correcting logic here to match a simple toggle
-    if (isSleepy) {
-        sleepyText.textContent = 'Wake up';
-    } else {
         sleepyText.textContent = 'Go to sleep';
     }
-}
-
-sleepyToggle.addEventListener('click', toggleSleepy);
+});
