@@ -34,18 +34,22 @@ class Raindrop {
         this.length = Math.random() * 20 + 10;
         this.speed = Math.random() * 5 + 5;
         this.opacity = (this.length / 30) * 0.3 + 0.1;
+        this.pulseOffset = Math.random() * Math.PI * 2;
     }
     draw() {
+        const pulse = Math.sin(Date.now() * 0.003 + this.pulseOffset) * 0.1 + 0.5;
+        const currentOpacity = this.opacity * pulse;
+        
         const gradient = ctx.createLinearGradient(this.x, this.y, this.x, this.y + this.length);
         gradient.addColorStop(0, `rgba(100, 149, 237, 0)`);
-        gradient.addColorStop(0.4, `rgba(100, 149, 237, ${this.opacity})`);
+        gradient.addColorStop(0.4, `rgba(100, 149, 237, ${currentOpacity})`);
         gradient.addColorStop(1, `rgba(100, 149, 237, 0)`);
 
         ctx.beginPath();
         ctx.strokeStyle = gradient;
         ctx.lineWidth = 1.5;
-        ctx.shadowBlur = 5;
-        ctx.shadowColor = `rgba(100, 149, 237, ${this.opacity})`;
+        ctx.shadowBlur = 5 * pulse;
+        ctx.shadowColor = `rgba(100, 149, 237, ${currentOpacity})`;
         ctx.moveTo(this.x, this.y);
         ctx.lineTo(this.x, this.y + this.length);
         ctx.stroke();
@@ -96,7 +100,6 @@ class Snowflake {
     }
     update() {
         this.y += this.speed;
-        this.x += Math.sin(this.y / 50) * 0.5;
         if (this.y > height) {
             this.reset();
         }
@@ -109,7 +112,7 @@ function init() {
     for (let i = 0; i < 100; i++) {
         raindrops.push(new Raindrop());
     }
-    for (let i = 0; i < 150; i++) {
+    for (let i = 0; i < 100; i++) {
         snowflakes.push(new Snowflake());
     }
 }
@@ -117,62 +120,18 @@ function init() {
 function animate() {
     ctx.clearRect(0, 0, width, height);
     
-    snowflakes.forEach(snowflake => {
-        snowflake.update();
-        snowflake.draw();
+    snowflakes.forEach(s => {
+        s.update();
+        s.draw();
     });
     
-    raindrops.forEach(raindrop => {
-        raindrop.update();
-        raindrop.draw();
+    raindrops.forEach(r => {
+        r.update();
+        r.draw();
     });
-    
+
     requestAnimationFrame(animate);
 }
 
 init();
 animate();
-
-const audioToggle = document.getElementById('audioToggle');
-const toggleText = document.getElementById('toggleText');
-const volumeSlider = document.getElementById('volumeSlider');
-
-const rainAudio = new Audio('https://www.soundjay.com/nature/sounds/rain-01.mp3');
-rainAudio.loop = true;
-
-let isPlaying = false;
-
-audioToggle.addEventListener('click', () => {
-    if (isPlaying) {
-        rainAudio.pause();
-        toggleText.innerText = 'Listen to the rain';
-    } else {
-        rainAudio.play();
-        toggleText.innerText = 'Quiet the rain';
-    }
-    isPlaying = !isPlaying;
-});
-
-volumeSlider.addEventListener('input', (e) => {
-    rainAudio.volume = e.target.value;
-});
-
-const sleepyToggle = document.getElementById('sleepyToggle');
-const sleepyText = document.getElementById('sleepyText');
-
-let isSleepy = false;
-
-sleepyToggle.addEventListener('click', () => {
-    isSleepy = !isSleepy;
-    if (isSleepy) {
-        document.body.classList.add('sleepy-overlay');
-        const overlay = document.createElement('div');
-        overlay.className = 'sleepy-overlay active';
-        document.body.appendChild(overlay);
-        sleepyText.innerText = 'Wake up';
-    } else {
-        const overlay = document.querySelector('.sleepy-overlay.active');
-        if (overlay) overlay.remove();
-        sleepyText.innerText = 'Go to sleep';
-    }
-});
